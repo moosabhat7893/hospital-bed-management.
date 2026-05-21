@@ -1,28 +1,15 @@
 const express = require("express");
-
 const mongoose = require("mongoose");
-
 const cors = require("cors");
-
 const dotenv = require("dotenv");
 
 dotenv.config();
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
-
 app.use(cors());
-
 app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
-
 app.use(express.static(__dirname + "/public"));
-
-mongoose.set("strictQuery", true);
 
 /* =========================
    MONGODB CONNECTION
@@ -35,9 +22,9 @@ mongoose.connect(process.env.MONGO_URI)
     console.log("MongoDB Connected");
 })
 
-.catch((err) => {
+.catch(err => {
 
-    console.log(err);
+    console.log("MongoDB Error:", err);
 });
 
 /* =========================
@@ -47,49 +34,33 @@ mongoose.connect(process.env.MONGO_URI)
 const PatientSchema = new mongoose.Schema({
 
     pid: Number,
-
     name: String,
-
-    age: Number,
-
+    age: String,
     contact: String
-});
+
+}, { strict: false });
 
 const BedSchema = new mongoose.Schema({
 
     bid: Number,
-
-    bedNumber: Number,
-
+    bedNumber: String,
     bedType: String,
+    pid: Number,
+    status: String
 
-    pid: {
-        type: Number,
-        default: null
-    },
-
-    status: {
-        type: String,
-        default: "Available"
-    }
-});
+}, { strict: false });
 
 const HistorySchema = new mongoose.Schema({
 
     hid: Number,
-
-    pid: Number,
-
     bid: Number,
-
+    pid: Number,
     diagnosis: String,
-
     treatment: String,
+    fromDate: String,
+    toDate: String
 
-    fromDate: Date,
-
-    toDate: Date
-});
+}, { strict: false });
 
 /* =========================
    MODELS
@@ -105,8 +76,6 @@ const History = mongoose.model("History", HistorySchema);
    PATIENT ROUTES
 ========================= */
 
-/* ADD PATIENT */
-
 app.post("/patients", async (req, res) => {
 
     try {
@@ -115,20 +84,17 @@ app.post("/patients", async (req, res) => {
 
         await patient.save();
 
-        res.json({
-            message: "Patient added successfully",
-            patient
-        });
+        res.json(patient);
 
     } catch (error) {
+
+        console.log(error);
 
         res.status(500).json({
             error: error.message
         });
     }
 });
-
-/* GET PATIENTS */
 
 app.get("/patients", async (req, res) => {
 
@@ -140,26 +106,30 @@ app.get("/patients", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
     }
 });
 
-/* DELETE PATIENT */
-
 app.delete("/patients/:pid", async (req, res) => {
 
     try {
 
-        const pid = Number(req.params.pid);
+        const patientId = Number(req.params.pid);
 
-        await Patient.deleteOne({ pid });
+        await Patient.deleteOne({
+            pid: patientId
+        });
 
-        await History.deleteMany({ pid });
+        await History.deleteMany({
+            pid: patientId
+        });
 
         await Bed.updateMany(
-            { pid },
+            { pid: patientId },
             {
                 $set: {
                     pid: null,
@@ -174,6 +144,8 @@ app.delete("/patients/:pid", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
@@ -184,42 +156,25 @@ app.delete("/patients/:pid", async (req, res) => {
    BED ROUTES
 ========================= */
 
-/* ADD BED */
-
 app.post("/beds", async (req, res) => {
 
     try {
-
-        const existingBed = await Bed.findOne({
-
-            bedNumber: req.body.bedNumber
-        });
-
-        if (existingBed) {
-
-            return res.json({
-                message: "Bed number already exists"
-            });
-        }
 
         const bed = new Bed(req.body);
 
         await bed.save();
 
-        res.json({
-            message: "Bed added successfully",
-            bed
-        });
+        res.json(bed);
 
     } catch (error) {
+
+        console.log(error);
 
         res.status(500).json({
             error: error.message
         });
     }
 });
-
-/* GET BEDS */
 
 app.get("/beds", async (req, res) => {
 
@@ -231,23 +186,27 @@ app.get("/beds", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
     }
 });
 
-/* DELETE BED */
-
 app.delete("/beds/:bid", async (req, res) => {
 
     try {
 
-        const bid = Number(req.params.bid);
+        const bedId = Number(req.params.bid);
 
-        await Bed.deleteOne({ bid });
+        await Bed.deleteOne({
+            bid: bedId
+        });
 
-        await History.deleteMany({ bid });
+        await History.deleteMany({
+            bid: bedId
+        });
 
         res.json({
             message: "Bed deleted successfully"
@@ -255,22 +214,22 @@ app.delete("/beds/:bid", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
     }
 });
 
-/* DISCHARGE BED */
-
 app.put("/beds/discharge/:bid", async (req, res) => {
 
     try {
 
-        const bid = Number(req.params.bid);
+        const bedId = Number(req.params.bid);
 
         await Bed.updateOne(
-            { bid },
+            { bid: bedId },
             {
                 $set: {
                     pid: null,
@@ -285,6 +244,8 @@ app.put("/beds/discharge/:bid", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
@@ -295,111 +256,59 @@ app.put("/beds/discharge/:bid", async (req, res) => {
    HISTORY ROUTES
 ========================= */
 
-/* ASSIGN BED */
-
 app.post("/history", async (req, res) => {
 
     try {
 
         const {
+
             hid,
-            pid,
             bid,
+            pid,
             diagnosis,
             treatment,
             fromDate,
             toDate
+
         } = req.body;
 
-        const startDate = new Date(fromDate);
-
-        const endDate = new Date(toDate);
-
-        /* =========================
-           VALIDATE DATES
-        ========================== */
-
-        if (startDate > endDate) {
-
-            return res.json({
-                message: "Invalid date range"
-            });
-        }
-
-        /* =========================
-           CHECK BED AVAILABILITY
-        ========================== */
-
-        const existingBedBooking = await History.findOne({
+        const existingAssignment = await History.findOne({
 
             bid: bid,
 
-            fromDate: {
-                $lte: endDate
-            },
+            fromDate: { $lte: toDate },
 
-            toDate: {
-                $gte: startDate
-            }
+            toDate: { $gte: fromDate }
         });
 
-        if (existingBedBooking) {
+        if (existingAssignment) {
 
             return res.json({
-                message: "Bed already occupied for selected dates"
+                message: "Bed already assigned during selected dates"
             });
         }
-
-        /* =========================
-           CHECK PATIENT AVAILABILITY
-        ========================== */
-
-        const existingPatientBooking = await History.findOne({
-
-            pid: pid,
-
-            fromDate: {
-                $lte: endDate
-            },
-
-            toDate: {
-                $gte: startDate
-            }
-        });
-
-        if (existingPatientBooking) {
-
-            return res.json({
-                message: "Patient already has a bed during selected dates"
-            });
-        }
-
-        /* =========================
-           SAVE HISTORY
-        ========================== */
 
         const history = new History({
 
             hid,
-            pid,
             bid,
+            pid,
             diagnosis,
             treatment,
-            fromDate: startDate,
-            toDate: endDate
+            fromDate,
+            toDate
         });
 
         await history.save();
 
-        /* =========================
-           UPDATE BED
-        ========================== */
-
         await Bed.updateOne(
-            { bid },
+
+            { bid: bid },
+
             {
                 $set: {
-                    pid: pid
+                    pid: pid,
+                    status: "Occupied"
                 }
             }
         );
@@ -410,13 +319,13 @@ app.post("/history", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
     }
 });
-
-/* GET HISTORY */
 
 app.get("/history", async (req, res) => {
 
@@ -428,32 +337,12 @@ app.get("/history", async (req, res) => {
 
     } catch (error) {
 
+        console.log(error);
+
         res.status(500).json({
             error: error.message
         });
     }
-});
-
-/* =========================
-   CLEAR TEST DATA
-========================= */
-
-app.delete("/clearBeds", async (req, res) => {
-
-    await Bed.deleteMany({});
-
-    res.json({
-        message: "Beds cleared"
-    });
-});
-
-app.delete("/clearHistory", async (req, res) => {
-
-    await History.deleteMany({});
-
-    res.json({
-        message: "History cleared"
-    });
 });
 
 /* =========================
