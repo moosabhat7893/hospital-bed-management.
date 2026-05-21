@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hospital Bed Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <h1>Hospital Bed Management System</h1>
+
+    <!-- =========================
+         ADD PATIENT + ADD BED
+    ========================== -->
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2>Add Patient</h2>
+
+            <input type="text" id="name" placeholder="Patient Name">
+
+            <input type="number" id="age" placeholder="Age">
+
+            <input type="text" id="contact" placeholder="Contact">
+
+            <button onclick="addPatient()">
+                Add Patient
+            </button>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Add Bed</h2>
+
+            <input type="number" id="bedNumber" placeholder="Bed Number">
+
+            <input type="text" id="bedType" placeholder="Bed Type">
+
+            <button onclick="addBed()">
+                Add Bed
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         SEARCH
+    ========================== -->
+
+    <div class="card search-card">
+
+        <h2>Search Patient</h2>
+
+        <input
+            type="text"
+            id="searchPatient"
+            placeholder="Search by patient name"
+            onkeyup="searchPatients()"
+        >
+
+    </div>
+
+    <!-- =========================
+         PATIENTS + BEDS
+    ========================== -->
+
+    <div class="list-container">
+
+        <div class="card">
+
+            <h2>Patients List</h2>
+
+            <ul id="patientList"></ul>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Beds List</h2>
+
+            <ul id="bedList"></ul>
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         ASSIGN BED
+    ========================== -->
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2>Assign Bed</h2>
+
+            <label>Select Patient</label>
+
+            <select id="historyPid"></select>
+
+            <label>Select Bed</label>
+
+            <select id="historyBid"></select>
+
+            <input type="text" id="diagnosis" placeholder="Diagnosis">
+
+            <input type="text" id="treatment" placeholder="Treatment">
+
+            <label>From Date</label>
+
+            <input type="date" id="fromDate">
+
+            <label>To Date</label>
+
+            <input type="date" id="toDate">
+
+            <button onclick="assignBed()">
+                Assign Bed
+            </button>
+
+        </div>
+
+        <div class="card">
+
+            <h2>History Records</h2>
+
+            <ul id="historyList"></ul>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
